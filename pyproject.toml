@@ -1,0 +1,46 @@
+[project]
+name = "graphalign"
+version = "0.1.0"
+description = "GraphAlign"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "funcsigs>=1.0.2",
+    "ipykernel>=7.2.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.2",
+    "pandas>=3.0.1",
+    "pot>=0.9.6.post1",
+    "pymanopt>=2.2.1",
+    "sacred>=0.8.7",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.1",
+    "setuptools<82.0.0",
+    "torch>=2.10.0",
+    "torch-geometric>=2.7.0",
+    "tqdm>=4.67.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.4",
+    "ty>=0.0.20",
+]
+docs = [
+    "sphinx>=9.1.0",
+]
+demo = [
+    "jupyter>=1.0.0",
+    "notebook>=7.0.0",
+]
+
+[tool.ruff.lint]
+select = ["ANN"]
+ignore = [
+    # example: "ANN101", # Missing type annotation for 'self' in method (now deprecated/removed in newer versions)
+]

@@ -1,0 +1,24 @@
+# GraphAlign library
+
+
+## Run the example implementation script
+```uv run --group dev example/main.py```
+
+## Build package
+```uv build```
+Check dist folder for wheel files.
+
+## Run linter
+```uv run ruff check --output-format=concise```
+## Run type checker
+```uv run ty check --output-format=concise```
+
+## Tests
+```uv run pytest```
+
+The above wil run the test suite
+
+## Generate Documentation
+```uv run --group docs make -C docs html```
+
+Check ```docs > build``` folder for compiled documentation
