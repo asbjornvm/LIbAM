@@ -45,7 +45,7 @@ class HTC(Algorithm):
         self.num_hid2 = self.hid_dim
         self.gt = self.pair.ground_truth
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         myNet = MyNet(self.num_node_s, self.num_node_t, self.num_feat, self.num_hid1, self.num_hid2, self.p).to(
             self.device)
 

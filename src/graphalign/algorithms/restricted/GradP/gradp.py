@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 import numpy as np
 import random
+
+import scipy
 import torch
 
 from graphalign.graph import GraphPair
@@ -36,7 +38,7 @@ class GradP(Algorithm):
     anchors_src: list | None = None
     anchors_tar: list | None = None
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         G1 = self.pair.src.copy()
         G2 = self.pair.tar.copy()
         n = G1.number_of_nodes()
@@ -87,23 +89,19 @@ class GradP(Algorithm):
 
         seed_list1 = np.array(seed_list1)
         seed_list2 = np.array(seed_list2)
-
-        # Remove duplicate target assignments, keeping first occurrence
-        seen: set = set()
-        mask = []
-        for x in seed_list2:
-            if x in seen:
-                mask.append(False)
-            else:
-                seen.add(x)
-                mask.append(True)
-        mask_arr = np.array(mask)
-        seed_list1 = seed_list1[mask_arr]
-        seed_list2 = seed_list2[mask_arr]
-
         sorted_indices = np.argsort(seed_list2)
-        tar_nodes = seed_list2[sorted_indices]
-        src_nodes = seed_list1[sorted_indices]
 
+        # Reorder list_of_nodes2 using the sorted indices
+        list_of_nodes2_sorted = seed_list2[sorted_indices]
+        list_of_nodes2_sorted = []
+        # print(len(G1.nodes))
+        for i in range(len(G1.nodes)):
+            list_of_nodes2_sorted.append(i)
+        # Reorder list_of_nodes1 with the same indices
+        list_of_nodes1_sorted = seed_list1[sorted_indices]
 
-        return _build_perm_matrix(src_nodes, tar_nodes, n, m)
+        n = len(list_of_nodes1_sorted)
+        matrix = np.zeros((n, n))
+        matrix[np.arange(n), list_of_nodes1_sorted] = 1.0
+        return matrix
+

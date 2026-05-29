@@ -8,7 +8,7 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 
 def main() -> None:
     # Step 1: Load graph pair from dataset (Alpine data loading in this case)
-    pair = load_alpine(DATA_DIR / "cora", "cora")
+    pair = load_alpine(DATA_DIR / "douban", "douban")
     print(f"Source: {pair.src.number_of_nodes()} nodes, {pair.src.number_of_edges()} edges")
     print(f"Target: {pair.tar.number_of_nodes()} nodes, {pair.tar.number_of_edges()} edges")
 

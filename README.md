@@ -14,8 +14,11 @@ Check dist folder for wheel files.
 ```uv run ty check --output-format=concise```
 
 ## Tests
-```uv run pytest```
+Run test suite:
+```uv run pytest -n auto```
 
+Run test suite with extra info (sequential):
+```uv run pytest -n auto - v```
 The above wil run the test suite
 
 ## Generate Documentation

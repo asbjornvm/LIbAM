@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
+import scipy
 import scipy.sparse as sps
 import numpy as np
+import torch
 
 from graphalign import GraphPair
 from graphalign.algorithms.maxrowmatchcpp import column_maxmatchsum
@@ -50,7 +52,7 @@ class Klaus(Algorithm):
     def name(self):
         return 'KLAUS'
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         a = self.a
         b = self.b
         gamma = self.gamma
@@ -138,5 +140,5 @@ class Klaus(Algorithm):
             U = U - GM * sps.triu(SM) + sps.tril(SM).T * GM
             U.data = U.data.clip(-0.5, 0.5)
 
-        result = sps.csr_matrix((xbest, (li, lj))).toarray()
-        return doubly_stochastic(to_torch(result), tau=1.0, it=20).numpy()
+        result = sps.csr_matrix((xbest, (li, lj)))
+        return result

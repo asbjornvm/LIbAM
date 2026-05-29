@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import torch
 from numpy import inf, nan
 import scipy.sparse as sps
 import scipy
@@ -90,7 +91,7 @@ class Isorank(Algorithm):
     def name(self) -> str:
         return "Isorank"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         dtype = np.float32
         Src = self.pair.src_adjacency
         Tar = self.pair.tar_adjacency

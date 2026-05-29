@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import scipy
 import scipy as sci
 import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
@@ -48,7 +49,7 @@ class Grasp(Algorithm):
     def name(self) -> str:
         return "GRASP"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         Src = self.pair.src_adjacency
         Tar = self.pair.tar_adjacency
 
@@ -62,7 +63,7 @@ class Grasp(Algorithm):
             upper_t=self.upper_t, linsteps=self.linsteps, base_align=self.base_align,
         )
         dist = sci.spatial.distance_matrix(G1_emb.T, G2_emb.T)
-        return np.exp(-dist)
+        return -dist
 
 
 def functional_maps_gen(A1, A2, q, k, n_eig, laa, icp, icp_its, lower_t, upper_t, linsteps, base_align):

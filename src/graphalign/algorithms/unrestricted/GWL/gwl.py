@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import scipy
+
 from graphalign import GraphPair
 from .model.GromovWassersteinLearning import GromovWassersteinLearning
 import torch.optim as optim
@@ -37,7 +39,7 @@ class GWL(Algorithm):
     gamma: float
     max_cpu: int
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         Src = self.pair.src_adjacency
         Tar = self.pair.tar_adjacency
         Se = np.array(sps.find(sps.csr_matrix(Src))[:2]).T

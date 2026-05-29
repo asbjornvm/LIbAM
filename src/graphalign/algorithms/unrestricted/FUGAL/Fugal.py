@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 import networkx as nx
 import numpy as np
+import scipy
 import torch
 
 from graphalign.graph import GraphPair
@@ -20,7 +21,7 @@ class Fugal(Algorithm):
     def __post_init__(self) -> None:
         self.__name__: str = "FUGAL"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         src: np.ndarray = self.pair.src_adjacency
         tar: np.ndarray = self.pair.tar_adjacency

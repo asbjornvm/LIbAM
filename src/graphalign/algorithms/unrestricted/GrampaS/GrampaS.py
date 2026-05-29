@@ -143,7 +143,7 @@ class GrampaS(Algorithm):
     def name(self) -> str:
         return "GrampaS"
 
-    def evaluate(self):
+    def _evaluate(self):
         # lalpha is unused?
         Src = self.pair.src_adjacency
         Tar = self.pair.tar_adjacency

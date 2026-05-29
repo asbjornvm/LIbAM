@@ -10,14 +10,16 @@ from graphalign.evaluation.hungarian import total_eval
 def main() -> None:
     # Step 0: Set device settings
     torch.set_num_threads(40)
+    import logging
+    logging.getLogger("graphalign").setLevel(logging.INFO)
 
     # Step 1: Generate base graph
-    base_graph = nx.barabasi_albert_graph(20, 3)
+    base_graph = nx.barabasi_albert_graph(55, 3)
     print(f"Base graph: {base_graph.number_of_nodes()} nodes, {base_graph.number_of_edges()} edges")
 
     # Step 2: Build graph pair, permutes node labels and adds noise.
     pair = GraphPair.from_graph(base_graph).permute().add_noise(target_noise=0.05)
-    print(f"Source edges: {pair.src.number_of_edges()}, Target edges: {pair.tar.number_of_edges()}")
+    print(f"Source edges: {pair.src.number_of_nodes()}, Target edges: {pair.tar.number_of_edges()}")
 
     anchor_links = pair.get_anchor_links(0.1)
 
@@ -27,12 +29,12 @@ def main() -> None:
         "anchor_links": anchor_links
     }
 
-    algorithm = alg.fugal(pair, **parameters)
+    algorithm = alg.fgot(pair, **parameters)
 
     # Step 4: Run and analyze accuracy
     result = algorithm.evaluate()
     accuracy = total_eval(pair, result)
-    print(f"result {algorithm.name} had a accuracy of: {accuracy:.4f}")
+    print(f"Result: {algorithm.name} had a accuracy of: {accuracy:.4f}, after {algorithm.execution_time:.6f} seconds")
 
 
 if __name__ == "__main__":

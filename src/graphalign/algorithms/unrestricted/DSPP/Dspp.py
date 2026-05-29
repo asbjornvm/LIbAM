@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import scipy
 from scipy.sparse.linalg import eigsh, eigs
 from scipy.sparse import csr_matrix, coo_matrix
 from scipy.sparse.linalg import LinearOperator
@@ -434,7 +435,7 @@ class DSPP(Algorithm):
     def name(self) -> str:
         return "DSPP"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         A = self.pair.src_adjacency
         B = self.pair.tar_adjacency
         D1 = shortest_path(A)

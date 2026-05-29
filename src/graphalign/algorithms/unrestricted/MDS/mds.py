@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import scipy
+
 from graphalign import GraphPair
 from graphalign.algorithms.algorithm import Algorithm
 import torch
@@ -49,7 +51,7 @@ class Mds(Algorithm):
     def name(self):
         return "MDS"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         A = self.pair.src_adjacency
         B = self.pair.tar_adjacency
 

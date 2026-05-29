@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
+import scipy
+import torch
 from scipy.optimize import linear_sum_assignment
 from scipy.sparse import kron, csr_matrix
 
@@ -118,7 +120,7 @@ class Path(Algorithm):
     def name(self) -> str:
         return "Path"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         A_H = self.pair.src_adjacency
         A_G = self.pair.tar_adjacency
         D_H = np.diag(np.sum(A_H, axis=1))

@@ -20,6 +20,7 @@ import scipy as sci
 
 from graphalign import GraphPair
 from graphalign.algorithms.algorithm import Algorithm
+from graphalign.algorithms.utils import doubly_stochastic, to_torch
 
 
 #from lapsolver import solve_dense
@@ -174,7 +175,7 @@ class Grampa(Algorithm):
     def name(self) -> str:
         return "Grampa"
 
-    def evaluate(self):
+    def _evaluate(self):
         eta = self.eta
 
         os.environ["MKL_NUM_THREADS"] = "20"
@@ -192,15 +193,7 @@ class Grampa(Algorithm):
         #Eq. 3
         coeff = coeff * (U.T @ np.ones((n,n)) @ V)
         X = U @ coeff @ V.T
-        Xt = X.T
         Xt=X
-        # Solve with linear assignment maximizing the similarity
-        # row,col = linear_sum_assignment(Xt, maximize=True)
-
-        # Alternatively, we can use a more efficient solver.
-        # The solver works on cost minimization, so take -X
-        #rows, cols = solve_dense(-Xt)
-        #return rows, cols
         return Xt
 
 def grampa(Src, Tar, eta):

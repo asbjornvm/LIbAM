@@ -1,8 +1,11 @@
 import numpy as np
+import scipy
 import sklearn.metrics.pairwise
 import scipy.sparse as sps
 import time
 from dataclasses import dataclass
+
+import torch
 from scipy.sparse import csr_matrix, coo_matrix
 from sklearn.neighbors import KDTree
 
@@ -106,7 +109,7 @@ class Cone(Algorithm):
     def name(self) -> str:
         return "CONE"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         src: np.ndarray = self.pair.src_adjacency
         tar: np.ndarray = self.pair.tar_adjacency
 

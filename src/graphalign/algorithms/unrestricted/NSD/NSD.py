@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
+import scipy
+import torch
 
 from graphalign.algorithms.algorithm import Algorithm
 from graphalign.algorithms.utils.matrix_utils import normout_rowstochastic
@@ -18,7 +20,7 @@ class NSD(Algorithm):
     def name(self):
         return "NSD"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         src = self.pair.src_adjacency
         tar = self.pair.tar_adjacency
 

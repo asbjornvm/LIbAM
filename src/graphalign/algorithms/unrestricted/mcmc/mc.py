@@ -2,6 +2,9 @@ from dataclasses import dataclass
 
 import random
 import numpy as np
+import scipy
+import torch
+
 from graphalign.algorithms.unrestricted.mcmc.mmnc_run import run_mmnc_align, run_immnc_align
 import copy
 import networkx as nx
@@ -104,7 +107,7 @@ class Mcmc(Algorithm):
     def name(self) -> str:
         return "MCMC"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         src = self.pair.src_adjacency
         tar = self.pair.tar_adjacency
 
@@ -131,7 +134,8 @@ class Mcmc(Algorithm):
                             metric=metrics,
                             fast=fast_select)
             n = len(list_of_nodes)
-            cost_matrix = np.zeros((n, n))
+
+            matrix = np.zeros((n, n))
             for i, j in enumerate(list_of_nodes):
-                cost_matrix[i, j] = 1.0
-            return cost_matrix
+                matrix[i, j] = 1.0
+            return matrix

@@ -2,6 +2,9 @@ import numpy as np
 import os
 from dataclasses import dataclass
 
+import scipy
+import torch
+
 from graphalign.algorithms.algorithm import Algorithm
 from graphalign import GraphPair
 
@@ -42,7 +45,7 @@ class Regal(Algorithm):
     def name(self) -> str:
         return "REGAL"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         Src = self.pair.src_adjacency
         Tar = self.pair.tar_adjacency
 

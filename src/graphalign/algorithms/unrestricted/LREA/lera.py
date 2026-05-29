@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import scipy
+import torch
 from numpy.linalg import svd
 #original code https://github.com/nassarhuda/lowrank_spectral
 from . import decomposeX, newbound_methods
@@ -22,7 +23,7 @@ class Lera(Algorithm):
     def name(self):
         return "LERA"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         iters = self.iters
         method = self.method
         b_match = self.b_match
@@ -58,7 +59,7 @@ class Lera(Algorithm):
         else:
             print(
                 "method should be one of the following: (1)eigenalign,(2)lowrank_unbalanced_best, (3)lowrank_unbalanced_union,(4)lowrank_balanced_best, (5)lowrank_balanced_union,(6)lowrank_Wkdecomposed_best, (7)lowrank_Wkdecomposed_union")
-        return scipy.sparse.csr_matrix((nzv, (nzi, nzj))).toarray()
+        return scipy.sparse.csr_matrix((nzv, (nzi, nzj)))
 
 
 def find_parameters(A, B):

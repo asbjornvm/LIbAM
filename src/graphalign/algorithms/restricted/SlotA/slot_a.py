@@ -1,18 +1,15 @@
 from dataclasses import dataclass
-import json
-import time
 
+
+import time
 import numpy as np
+import scipy
 from torch_geometric.nn import GraphConv
 
 from graphalign.algorithms.restricted.SlotA.GWLTorch import *
 #from graphalign.algorithms.restricted.SlotA.utils import *
 from graphalign import GraphPair
 from graphalign.algorithms.algorithm import Algorithm
-
-random.seed(123)
-torch.random.manual_seed(123)
-np.random.seed(123)
 
 
 @dataclass
@@ -27,7 +24,7 @@ class SlotA(Algorithm):
     def __post_init__(self) -> None:
         self.__name__: str = "SLOTA"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         Aadj = nx.to_numpy_array(self.pair.src)
         Badj = nx.to_numpy_array(self.pair.tar)

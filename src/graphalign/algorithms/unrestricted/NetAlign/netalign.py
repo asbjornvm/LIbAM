@@ -1,6 +1,9 @@
 from dataclasses import dataclass
+
+import scipy
 import scipy.sparse as sps
 import numpy as np
+import torch
 
 from graphalign import GraphPair
 from graphalign.algorithms import bipartitewrapper as bmw
@@ -71,7 +74,7 @@ class NetAlign(Algorithm):
     def name(self) -> str:
         return "NetAlign"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         S = self.pair.S
         li = self.pair.li
         lj = self.pair.lj
@@ -185,4 +188,4 @@ class NetAlign(Algorithm):
                 print('{:4s}   {:4d}   {:7.2f} {:7.2f} {:7d} {:7d}   {:7.2f} {:7.2f} {:7d} {:7d}'.format(
                     bestchar, it, *hista, *histb))
 
-        return sps.csr_matrix((mbest, (li, lj))).toarray()
+        return sps.csr_matrix((mbest, (li, lj)))

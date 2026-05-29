@@ -23,9 +23,10 @@ import networkx as nx
 import time
 from ..utils.matrix_utils import doubly_stochastic, regularise_invert_one, to_torch
 
+
 def get_filters(L1, method, tau = 0.2):
     if method == 'got':
-        g1 = np.real(slg.sqrtm(regularise_invert_one(L1,alpha = 0.1, ones = False )))
+        g1 = np.real(slg.sqrtm(regularise_invert_one(L1, alpha = 0.1, ones = False)))
     elif method == 'weight':
         g1 = np.diag(np.diag(L1)) - L1
     elif method == 'heat':
@@ -77,7 +78,7 @@ class Fgot(Algorithm):
     def name(self) -> str:
         return "fgot"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         os.environ["OMP_NUM_THREADS"] = "20"
         torch.set_num_threads(20)
         os.environ["MKL_NUM_THREADS"] = "20"

@@ -2,6 +2,8 @@
 This script contains the functions related to Gromove-Wasserstein Learning
 """
 import copy
+import logging
+
 from ..dev.util import logger
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +14,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+
+logger = logging.getLogger(__name__)
 
 class GromovWassersteinEmbedding(nn.Module):
     """
@@ -476,7 +480,7 @@ class GromovWassersteinLearning(object):
                 trans = torch.matmul(torch.matmul(
                     torch.diag(a[:, 0]), kernel), torch.diag(b[:, 0]))
                 if t % 100 == 0:
-                    print('sinkhorn iter {}/{}'.format(t,
+                    logger.debug('sinkhorn iter {}/{}'.format(t,
                                                        hyperpara_dict['outer_iteration']))
             cost = cost_st - 2 * \
                 torch.matmul(torch.matmul(cost_s, trans), torch.t(cost_t))

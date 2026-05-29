@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import scipy
 import torch
 
 from graphalign._logging import logger
@@ -34,7 +35,7 @@ class Joena(Algorithm):
     def __post_init__(self) -> None:
         self.__name__: str = "JOENA"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         assert torch.cuda.is_available() or self.device == 'cpu', 'CUDA is not available'
         torch_device = torch.device(self.device)
         torch.set_default_dtype(torch.float64)
@@ -57,7 +58,7 @@ class Joena(Algorithm):
         gw_weight = self.alpha / (1 - self.alpha) * min(n1, n2) ** 0.5
 
         for run in range(self.runs):
-            logger.info(f"Run {run + 1}/{self.runs}")
+            logger.debug(f"Run {run + 1}/{self.runs}")
             model = MLP(input_dim=G1_tg.x.shape[1],
                         hidden_dim=self.hidden_dim,
                         output_dim=self.out_dim).to(torch_device)
@@ -80,4 +81,4 @@ class Joena(Algorithm):
                 optimizer.step()
                 logger.info(f'Epoch {epoch + 1}, Loss: {loss.item():.6f}')
 
-            return similarity.detach().cpu().numpy()
+            return similarity

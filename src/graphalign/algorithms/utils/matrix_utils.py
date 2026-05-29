@@ -1,42 +1,43 @@
 """Shared matrix utility functions used across multiple graph alignment algorithms."""
+import typing
 
 import numpy as np
 import numpy.linalg as lg
-import scipy.sparse as sps
+import scipy
 import torch
 
 
-def doubly_stochastic(P: torch.Tensor, tau: float, it: int) -> torch.Tensor:
-    """Project a matrix onto the set of doubly stochastic matrices.
 
-    Uses the log-sum-exp for numerical stability.
-
-    Args:
-        P: Input tensor to project.
-        tau: Temperature parameter controlling sharpness.
-        it: Number of Sinkhorn iterations.
-
-    Returns:
-        A doubly stochastic tensor of the same shape as P.
+def doubly_stochastic(p: np.ndarray | torch.Tensor | scipy.sparse.csr_matrix, iterations: int) -> np.ndarray:
     """
-    A = P / tau
-    for _ in range(it):
-        A = A - A.logsumexp(dim=1, keepdim=True)
-        A = A - A.logsumexp(dim=0, keepdim=True)
-    return torch.exp(A)
+    Project a matrix onto the set of doubly stochastic matrices.
+
+    Can possibly create nan if there are negative values in p, should not happen in practice.
+
+    :param p: input matrix or tensor
+    :param iterations: Number of Sinkhorn iterations
+    :return: Doubly stochastic numpy matrix of the same shape as p.
+    """
+    if isinstance(p, torch.Tensor):
+        p = p.detach().cpu().numpy()
+    elif isinstance(p, scipy.sparse.csr_matrix):
+        p = p.toarray()
+
+    a = p.astype(np.float64)
+    for _ in range(iterations):
+        a -= np.log(np.sum(np.exp(a), axis=1, keepdims=True))
+        a -= np.log(np.sum(np.exp(a), axis=0, keepdims=True))
+    return np.exp(a)
 
 
 def regularise_invert_one(x: np.ndarray, alpha: float, ones: bool) -> np.ndarray:
-    """Compute a regularised (pseudo-)inverse of a matrix.
+    """
+    Compute a regularised (pseudo-)inverse of a matrix
 
-    Args:
-        x: Input square matrix.
-        alpha: Regularisation strength added to the diagonal.
-        ones: If True, also adds a rank-1 all-ones correction term before inverting.
-              If False, computes the Moore-Penrose pseudoinverse and adds alpha * I.
-
-    Returns:
-        The regularised inverse as a numpy array.
+    :param x:
+    :param alpha:
+    :param ones:
+    :return:
     """
     if ones:
         return lg.inv(x + alpha * np.eye(len(x)) + np.ones([len(x), len(x)]) / len(x))
@@ -44,21 +45,21 @@ def regularise_invert_one(x: np.ndarray, alpha: float, ones: bool) -> np.ndarray
 
 
 def regularise_and_invert(x: np.ndarray, y: np.ndarray, alpha: float, ones: bool) -> list[np.ndarray]:
-    """Apply regularised inversion to a pair of matrices.
-
-    Args:
-        x: First input matrix.
-        y: Second input matrix.
-        alpha: Regularisation strength.
-        ones: Whether to include the rank-1 all-ones correction (see regularise_invert_one).
-
-    Returns:
-        A list [x_reg, y_reg] of regularised inverse matrices.
     """
-    return [regularise_invert_one(x, alpha, ones), regularise_invert_one(y, alpha, ones)]
+    Apply regularised inversion to a pair of matrices
+
+    :param x: First input matrix
+    :param y: Second input matrix
+    :param alpha:
+    :param ones:
+    :return: A list [x_reg, y_reg] of regularised inverse matrices.
+    """
+    x_reg = regularise_invert_one(x, alpha, ones)
+    y_reg = regularise_invert_one(y, alpha, ones)
+    return [x_reg, y_reg]
 
 
-def normout_rowstochastic(P: np.ndarray | sps.spmatrix) -> np.ndarray:
+def normout_rowstochastic(P: np.ndarray | scipy.sparse.spmatrix) -> np.ndarray:
     """
     Row-normalise a (sparse or dense) matrix so each row sums to 1
 
@@ -69,12 +70,12 @@ def normout_rowstochastic(P: np.ndarray | sps.spmatrix) -> np.ndarray:
 
     n = P.shape[0]
     m = P.shape[1]
-    pi, pj, pv = sps.find(P)
+    pi, pj, pv = scipy.sparse.find(P)
     row_sums = np.asarray(P.sum(axis=1)).ravel()
 
     safe_sums = np.where(row_sums == 0, 1.0, row_sums)
     pv = pv / safe_sums[pi]
-    return sps.csc_matrix((pv, (pi, pj)), shape=(n, m)).toarray()
+    return scipy.sparse.csc_matrix((pv, (pi, pj)), shape=(n, m)).toarray()
 
 
 def to_torch(x: np.ndarray) -> torch.Tensor:
@@ -88,6 +89,14 @@ def to_torch(x: np.ndarray) -> torch.Tensor:
 
 
 def node_to_degree(G_degree, SET):
+    """
+    Map a set of node IDs to their corresponding degrees
+
+    :param G_degree:
+    :param SET:
+    :return:
+    """
+
     SET = list(SET)
     SET = sorted([G_degree[x] for x in SET])
     return SET

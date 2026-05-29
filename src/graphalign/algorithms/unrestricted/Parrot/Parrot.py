@@ -3,6 +3,7 @@ import numpy as np
 import time
 import scipy
 import networkx as nx
+import torch
 
 from graphalign import GraphPair
 from graphalign.algorithms.algorithm import Algorithm
@@ -298,7 +299,7 @@ class Parrot(Algorithm):
     def name(self):
         return "Parrot"
 
-    def evaluate(self) -> np.ndarray:
+    def _evaluate(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
         a1 = self.pair.src_adjacency
         a2 = self.pair.tar_adjacency
 

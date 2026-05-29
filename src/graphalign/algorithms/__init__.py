@@ -123,7 +123,7 @@ def gwl(
     # Optimiser options
     epochs: int = 1,
     batch_size: int = 64,
-    use_cuda: bool = True,
+    use_cuda: bool = False,
     strategy: str = 'hard',
     beta: float = 0.1,
     outer_iteration: int = 20,
