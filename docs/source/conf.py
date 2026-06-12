@@ -10,7 +10,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('../../src'))
 
-project = 'graphalign'
+project = 'LIbAM'
 copyright = '2026, asbjørn'
 author = 'asbjørn'
 
@@ -35,3 +35,8 @@ exclude_patterns = []
 
 html_theme = 'alabaster'
 html_static_path = ['_static']
+html_favicon = '_static/icon.svg'
+html_theme_options = {
+    'logo': 'icon.svg',  # Alabaster's own option (path relative to _static)
+    'logo_name': True,   # show the project name (LIbAM) under the logo
+}

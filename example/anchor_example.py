@@ -1,9 +1,9 @@
 import networkx as nx
 import numpy as np
 
-from graphalign import GraphPair
-from graphalign import algorithms as alg
-from graphalign.evaluation.hungarian import total_eval
+from libam import GraphPair
+from libam import algorithms as alg
+from libam.evaluation import accuracy
 
 def main() -> None:
     # Step 1: Generate base graph
@@ -24,9 +24,9 @@ def main() -> None:
     algorithm = alg.joena(pair, **parameters)
 
     # Step 4: Run and analyze accuracy
-    result = algorithm.evaluate()
-    accuracy = total_eval(pair, result)
-    print(f"result {algorithm.name} had a accuracy of: {accuracy:.4f}")
+    result = algorithm.align()
+    acc = accuracy(pair, result)
+    print(f"result {algorithm.name} had an accuracy of: {acc:.4f}")
 
 
 if __name__ == "__main__":

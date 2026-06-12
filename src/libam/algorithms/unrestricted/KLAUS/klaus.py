@@ -1,0 +1,144 @@
+from dataclasses import dataclass
+
+import scipy
+import scipy.sparse as sps
+import numpy as np
+import torch
+
+from libam.graph.graph_pair import GraphPair
+from libam.algorithms.maxrowmatchcpp import column_maxmatchsum
+from libam.algorithms import bipartitewrapper as bmw
+from libam.algorithms.algorithm import AlignAlgorithm
+import os
+
+from libam.algorithms.utils import doubly_stochastic, to_torch
+
+
+#original code https://www.cs.purdue.edu/homes/dgleich/codes/netalign/
+
+def maxrowmatch(Q, li, lj, m, n):
+
+    Qt = Q
+
+    q, mi, mj = column_maxmatchsum(
+        Qt.shape[0],
+        Qt.shape[1],
+        Qt.indptr,
+        Qt.indices,
+        Qt.data,
+        m,
+        n,
+        li.shape[0],
+        li,
+        lj,
+    )
+
+    SM = sps.csr_matrix((np.ones(mi.shape[0]), (mj, mi)), shape=Qt.shape)
+    return q, SM
+
+
+@dataclass
+class Klaus(AlignAlgorithm):
+    pair: GraphPair
+    a: int
+    b: int
+    gamma: float
+    stepm: float
+    rtype: int
+    max_iter: int
+    verbose: bool
+
+    @property
+    def name(self):
+        return 'KLAUS'
+
+    def _align(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
+        a = self.a
+        b = self.b
+        gamma = self.gamma
+        stepm = self.stepm
+        rtype = self.rtype
+        maxiter = self.max_iter
+        verbose = self.verbose
+
+        S = self.pair.S
+        li = self.pair.li
+        lj = self.pair.lj
+        w = self.pair.w
+
+        os.environ["MKL_NUM_THREADS"] = "20"
+        os.environ["OMP_NUM_THREADS"] = "20"
+        setup, m, n = bmw.bipartite_setup(li, lj, w)
+
+        S = sps.csr_matrix(S, dtype=float)
+        U = sps.csr_matrix(S.shape)
+
+        xbest = np.zeros(len(w))
+
+        flower = 0.0
+        fupper = np.inf
+        next_reduction_iteration = stepm
+
+        if verbose:
+            print('{:5s}   {:>4s}   {:>8s}   {:>7s} {:>7s} {:>7s}  {:>7s} {:>7s} {:>7s} {:>7s}'.format(
+                'best', 'iter', 'norm-u', 'lower', 'upper', 'cur', 'obj', 'weight', 'card', 'overlap'))
+
+        for it in range(1, maxiter+1):
+
+            q, SM = maxrowmatch((b/2)*S + U-U.T, li, lj, m, n)
+
+            x = a*w + q
+
+            f, matchval, card, overlap, val, mi = bmw.round_messages(
+                x, S, w, a, b, setup, m, n)
+
+            if val < fupper:
+                fupper = val
+                next_reduction_iteration = it+stepm
+            if f > flower:
+                flower = f
+                itermark = '*'
+                xbest = mi
+            else:
+                itermark = ' '
+
+            if rtype == 1:
+                pass
+            elif rtype == 2:
+
+                mw = S*x
+                mw = a*w + b/2*mw
+
+                f, matchval, card, overlap, _, mx = bmw.round_messages(
+                    mw, S, w, a, b, setup, m, n)
+
+                if f > flower:
+                    flower = f
+                    itermark = '**'
+                    mi = mx
+                    xbest = mw
+
+            if verbose:
+                print('{:5s}   {:4d}   {:8.1e}   {:7.2f} {:7.2f} {:7.2f}  {:7.2f} {:7.2f} {:7d} {:7d}'.format(
+                    itermark, it, np.linalg.norm(U.data, 1),
+                    flower, fupper, val,
+                    f, matchval, card, overlap
+                ))
+
+            if it == next_reduction_iteration:
+                gamma = gamma*0.5
+                if verbose:
+                    print(f'{"":5s}   {"":4s}   reducing step to {gamma}')
+                if gamma < 1e-24:
+                    break
+                next_reduction_iteration = it+stepm
+
+            if (fupper-flower) < 1e-2:
+                break
+
+            GM = sps.diags(gamma*mi, format="csr")
+            U = U - GM * sps.triu(SM) + sps.tril(SM).T * GM
+            U.data = U.data.clip(-0.5, 0.5)
+
+        result = sps.csr_matrix((xbest, (li, lj)))
+        return result

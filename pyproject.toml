@@ -1,7 +1,7 @@
 [project]
-name = "graphalign"
-version = "0.1.0"
-description = "GraphAlign"
+name = "libam"
+version = "1.0.0"
+description = "LIbAM - A Standardized Graph Alignment Library"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,7 +9,9 @@ dependencies = [
     "ipykernel>=7.2.0",
     "matplotlib>=3.10.8",
     "numpy>=2.4.2",
+    "orbit-count>=0.1.0",
     "pandas>=3.0.1",
+    "pooch>=1.9.0",
     "pot>=0.9.6.post1",
     "pymanopt>=2.2.1",
     "sacred>=0.8.7",
@@ -40,8 +42,10 @@ demo = [
     "notebook>=7.0.0",
 ]
 
+[tool.uv]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
 [tool.ruff.lint]
 select = ["ANN"]
-ignore = [
-    # example: "ANN101", # Missing type annotation for 'self' in method (now deprecated/removed in newer versions)
-]

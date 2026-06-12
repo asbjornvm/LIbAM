@@ -3,8 +3,9 @@ import numpy as np
 import pytest
 import scipy.optimize
 
-import graphalign.algorithms as alg
-from graphalign import GraphPair, eval_align
+import libam.algorithms as alg
+from libam.graph.graph_pair import GraphPair
+from libam.evaluation import accuracy
 
 
 N_SEEDS = 5
@@ -16,16 +17,15 @@ def _make_pair(seed: int) -> GraphPair:
     return GraphPair.from_graph(graph).permute().add_noise(0.05)
 
 
-def _acc(P: np.ndarray, pair: GraphPair) -> float:
-    ma, mb = scipy.optimize.linear_sum_assignment(-P)
-    _, acc, _ = eval_align(ma, mb, pair.ground_truth[0])
+def _acc(p: np.ndarray, pair: GraphPair) -> float:
+    acc = accuracy(pair, p)
     return acc
 
 
 def _passes_once(fn: callable, n_seeds: int = N_SEEDS) -> bool:
     for seed in range(n_seeds):
         pair = _make_pair(seed)
-        if _acc(fn(pair).evaluate(), pair) != 0.0:
+        if _acc(fn(pair).align(), pair) != 0.0:
             return True
     return False
 
@@ -51,3 +51,5 @@ def test_joena():
     def joena_with_anchors(pair: GraphPair):
         return alg.joena(pair, anchor_links=pair.get_anchor_links(0.1))
     assert _passes_once(joena_with_anchors)
+
+def test_htc():       assert _passes_once(alg.htc)

@@ -1,23 +1,18 @@
 import numpy as np
-import networkx as nx
-from pathlib import Path
 
-from graphalign import load_graph_from_txt
-from graphalign import GraphPair
-from graphalign import algorithms as alg
-from graphalign.evaluation.hungarian import multi_eval
-
-DATA_DIR = Path(__file__).parent.parent / "data"
+import libam.datasets
+from libam import algorithms as alg
+import libam
 
 
 def main() -> None:
     # Step 0: Disable warning logging of you know what you are doing,
     # can be useful to clean up messy multi algorithm unused parameter warning noise
     import logging
-    logging.getLogger("graphalign").setLevel(logging.ERROR)
+    logging.getLogger("libam").setLevel(logging.ERROR)
 
     # Step 1: Load graph pair, and permute + noise data
-    pair = load_graph_from_txt(DATA_DIR / "bio-celegans.txt").permute().add_noise(target_noise=0.05)
+    pair = libam.datasets.bio_dmela.graphpair().permute().add_noise(target_noise=0.05)
     print(f"Source edges: {pair.src.number_of_edges()}, Target edges: {pair.tar.number_of_edges()}")
 
     # Step 3: Construct shared params object, and set up algorithms
@@ -49,12 +44,13 @@ def main() -> None:
 
     for algorithm in algorithms:
         print(f"Running {algorithm.name}...")
-        results[algorithm.name] = algorithm.evaluate()
+        results[algorithm.name] = algorithm.align()
 
     # Step 5: Analyze accuracy
-    accuracy = multi_eval(pair, results)
-    for name, acc in accuracy:
-        print(f"result {name} had a accuracy of: {acc:.4f}")
+    accuracy = [(libam.evaluation.accuracy(pair, permutation)) for name, permutation in results.items()]
+    frobenius = [(libam.evaluation.frobenius(pair, permutation)) for name, permutation in results.items()]
+    for i in range(len(algorithms)):
+        print(f"result {algorithms[i].name} had an accuracy of: {accuracy[i]:.4f}, with Frobenius score: {str(frobenius[i])}")
 
 
 if __name__ == "__main__":

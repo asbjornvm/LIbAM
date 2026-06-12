@@ -1,0 +1,166 @@
+from dataclasses import dataclass
+
+import numpy as np
+#from scipy.optimize import linear_sum_assignment
+from numpy.linalg import inv
+from numpy.linalg import eigh,eig
+import networkx as nx 
+import random
+from math import floor, log2
+#from lapsolver import solve_dense
+import scipy as sci
+#from lapsolver import solve_dense
+from numpy import inf, nan
+import scipy.sparse as sps
+import math
+import os
+
+#from lapsolver import solve_dense
+import scipy as sci
+
+from libam.graph.graph_pair import GraphPair
+from libam.algorithms.algorithm import AlignAlgorithm
+from libam.algorithms.utils import doubly_stochastic, to_torch
+
+
+#from lapsolver import solve_dense
+
+def decompose_Tlaplacian(A,rA):
+
+    #  adjacency matrix
+    r= (rA**2-1)
+    Deg = np.diag((np.sum(A, axis=1)))
+    
+    n = np.shape(Deg)[0]
+    #Deg = sci.linalg.fractional_matrix_power(Deg, -0.5)
+
+    L = r* np.identity(n) + Deg - rA*A 
+    L1=np.ones((n,n))-np.identity(n)-A
+   # print((sci.fractional_matrix_power(Deg, -0.5) * A * sci.fractional_matrix_power(Deg, -0.5)))
+    # '[V1, D1] = eig(L1);
+
+    D, V = np.linalg.eigh(L)
+    D1,V1=np.linalg.eigh(L1)
+    return [D1, V1]
+    #return [D, V]
+def decompose_laplacian(A):
+    # Compute the degree matrix
+    D = np.diag(np.sum(A, axis=1))
+
+    n = np.shape(D)[0]
+
+    # Calculate the unnormalized Laplacian matrix
+    L = D - A
+
+    # Compute the eigenvalues and eigenvectors of L
+    D, V = np.linalg.eigh(L)
+    #D, V = seigh(L)
+    return [D, V]
+def decomposeN_laplacian(A):
+
+    #  adjacency matrix
+    Deg = np.linalg.inv(np.sqrt(np.diag((np.sum(A, axis=1)))))
+    #Deg = np.diag((np.sum(A, axis=1)))
+
+    n = np.shape(Deg)[0]
+
+    #Deg 
+    #Deg = sci.linalg.fractional_matrix_power(Deg, -0.5)
+
+    L = np.identity(n) - Deg @ A @ Deg
+
+
+    D, V = np.linalg.eigh(L)
+
+    return [D, V]
+
+def random_walk_laplacian(A):
+    # Calculate the degree matrix D
+    D = np.diag(np.sum(A, axis=1))
+    #epsilon = 1e-6  # Small constant
+    #D_inv = np.linalg.inv(D + epsilon * np.identity(D.shape[0]))
+    # Compute the inverse of D
+    D_inv = np.linalg.inv(D)
+    # Calculate the Random Walk Laplacian L_rw
+    L_rw = np.identity(len(A)) - np.dot(D_inv, A)
+    #D, V = np.linalg.eigh(L_rw)
+    D, V = np.linalg.eig(L_rw)
+    return [D, V]
+    #return L_rw
+def Signless_Laplacian(A):
+        # Compute the degree matrix
+    D = np.diag(np.sum(A, axis=1))
+    n = np.shape(D)[0]
+    # Calculate the unnormalized Laplacian matrix
+    L = D + A
+    # Compute the eigenvalues and eigenvectors of L
+    D, V = np.linalg.eig(L)
+    return [D, V]
+def seigh(A):
+  """
+  Sort eigenvalues and eigenvectors in descending order. 
+  Not used.
+  """
+  l, u = np.linalg.eigh(A)
+  idx = l.argsort()[::-1]   
+  l = l[idx]
+  u = u[:,idx]
+  return l, u
+
+
+@dataclass
+class Grampa(AlignAlgorithm):
+    pair: GraphPair
+    eta: float
+
+    @property
+    def name(self) -> str:
+        return "Grampa"
+
+    def _align(self):
+        eta = self.eta
+
+        os.environ["MKL_NUM_THREADS"] = "20"
+        os.environ["OMP_NUM_THREADS"] = "20"
+        Src = self.pair.src_adjacency
+        Tar = self.pair.tar_adjacency
+        n = Src.shape[0]
+        l,U =eigh(Src)
+        mu,V = eigh(Tar)
+        l = np.array([l])
+        mu = np.array([mu])
+        dtype = np.float32
+        #Eq.4
+        coeff = 1.0/((l.T - mu)**2 + eta**2)
+        #Eq. 3
+        coeff = coeff * (U.T @ np.ones((n,n)) @ V)
+        X = U @ coeff @ V.T
+        Xt=X
+        return Xt
+
+def grampa(Src, Tar, eta):
+  """
+  Summary or Description of the Function
+
+  Parameters:
+  Src (np.array): The nxn adjacency matrix of the first graph 
+  Tar (np.array): The nxn adjacency matrix of the second graph
+  eta (float): The eta value of Eq. 4 in the paper
+
+  Returns:
+  Xt similarity Matrix
+  """
+  n = Src.shape[0]
+  l,U = eigh(Src)
+  mu,V = eigh(Tar)
+  l = np.array([l])
+  mu = np.array([mu])
+  os.environ["OMP_NUM_THREADS"] = "20" 
+  #Eq.4
+  coeff = 1.0/((l.T - mu)**2 + eta**2)
+  #Eq. 3
+  coeff = coeff * (U.T @ np.ones((n,n)) @ V)
+  X = U @ coeff @ V.T
+
+  Xt = X.T
+  return Xt

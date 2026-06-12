@@ -1,0 +1,170 @@
+import scipy
+
+from .sink_otm import *
+
+from .bregman import *
+
+import numpy as np
+import torch
+
+from .sink_otm import sinkhorn_custom, sink
+from libam.graph.graph_pair import GraphPair
+from libam.algorithms.algorithm import AlignAlgorithm
+
+torch.set_default_tensor_type('torch.DoubleTensor')
+import random
+import math
+import numpy.linalg as lg
+import scipy.linalg as slg
+from matplotlib import pyplot as plt
+from   numpy import linalg as LA
+import os
+
+import networkx as nx
+import time
+from libam.algorithms.utils.matrix_utils import doubly_stochastic, regularise_invert_one, to_torch
+
+
+def get_filters(L1, method, tau = 0.2):
+    if method == 'got':
+        g1 = np.real(slg.sqrtm(regularise_invert_one(L1, alpha = 0.1, ones = False)))
+    elif method == 'weight':
+        g1 = np.diag(np.diag(L1)) - L1
+    elif method == 'heat':
+        g1 = slg.expm(-tau*L1)
+    elif method == 'sqrtL':
+        g1 = np.real(slg.sqrtm(L1))
+    elif method == 'L':
+        g1 = L1
+    elif method == 'sq':
+        g1 = L1 @ L1
+    return g1
+
+def loss(DS, g1, g2, loss_type, epsilon = 5e-4):
+    """
+    Calculate loss, with the help of initially calculated params
+    """
+
+    #print("Torch num_threads:", torch.get_num_threads())
+    if loss_type == 'w_simple':
+        cost = - 2 * torch.trace( g1 @ DS @ g2 @ DS.t() )
+        
+    elif loss_type == 'l2':       
+        cost = torch.sum((g1 @ DS - DS @ g2)**2, dim=1).sum()
+        
+    return cost
+
+
+
+# Algorithm -- Stochastic Mirror gradient 
+#===================================================================
+# lr = 1 is good
+
+class Fgot(AlignAlgorithm):
+    def __init__(self, pair: GraphPair, tau: int, n_samples: int, epochs: int, lr: int,
+                 std_init: int, loss_type: str, seed: int, verbose: bool, tol: float, adapt_lr: bool):
+        self.pair = pair
+        self.tau = tau
+        self.n_samples = n_samples
+        self.epochs = epochs
+        self.lr = lr
+        self.std_init = std_init
+        self.loss_type = loss_type
+        self.seed = seed
+        self.verbose = verbose
+        self.tol = tol
+        self.adapt_lr = adapt_lr
+
+    @property
+    def name(self) -> str:
+        return "fgot"
+
+    def _align(self) -> np.ndarray | torch.Tensor | scipy.sparse.csr_matrix:
+        os.environ["OMP_NUM_THREADS"] = "20"
+        os.environ["MKL_NUM_THREADS"] = "20"
+        g1 = self.pair.src_adjacency
+        g2 = self.pair.tar_adjacency
+        tau = self.tau
+        n_samples = self.n_samples
+        # Initialization
+        torch.manual_seed(self.seed)
+        g1 = get_filters(g1, 'sq')
+        g2 = get_filters(g2, 'sq')
+        n = g1.shape[0]
+        m = g2.shape[0]
+        # lr = 50*n*m
+        if self.adapt_lr:
+            lr = self.lr/(np.max(g1)*np.max(g2))
+        g1 = to_torch(g1)
+        g2 = to_torch(g2)
+
+        mean = to_torch(np.outer(np.repeat(1/n, n), np.repeat(1/m, m)))
+        mean = mean.requires_grad_()
+
+        std = self.std_init * torch.ones(n, m)
+        std = std.requires_grad_()
+
+        self.epoch = 0
+
+        while self.epoch < self.epochs:
+            cost = 0
+            for sample in range(self.n_samples):
+                eps = torch.rand(n, m)
+                P_noisy = mean + std * eps
+                proj, _, _ = sinkhorn_custom(torch.relu(P_noisy) + 1/n, {}, False)
+                cost = cost + loss(proj, g1, g2, self.loss_type)
+            cost = cost/self.n_samples
+            cost.backward()
+
+            # Aux.
+            s2 = std.data**2
+            d  = self.lr/2 * s2 * std.grad
+            # Update
+            mean_prev = mean.data
+            mean.data = mean.data - self.lr * mean.grad * s2
+            std.data  = torch.sqrt(s2 + d) - d
+
+            mean.grad.zero_()
+            std.grad.zero_()
+
+            # Tracking
+            #history.append(cost.item())
+            if ((self.epoch+1) % 10 == 0 and (self.epoch>50)):
+
+                err = np.linalg.norm(sink(-self.tau*mean.detach(), self.tau) - sink(-self.tau*mean_prev.detach(), self.tau)) / (n*m)
+            self.epoch += 1
+
+        # return mean.detach()
+        P, _, _ = sinkhorn_custom(-self.tau*mean.detach(), {}, True, reg=self.tau)
+
+        return P
+
+
+# Tools # ===================================================================================================================
+
+
+def torch_invert(x: torch.Tensor, alpha: float, ones: bool = False) -> torch.Tensor:
+    """Regularised torch inverse of a matrix."""
+    if ones:
+        return torch.inverse(
+            x
+            + alpha * torch.from_numpy(np.eye(len(x)))
+            + torch.from_numpy(np.ones([len(x), len(x)]) / len(x))
+        )
+    return torch.inverse(x + alpha * torch.from_numpy(np.eye(len(x))))
+
+
+def rnorm(M):
+    r  = M.shape[0] 
+    c  = M.shape[1]
+    N  = np.zeros((r, c))
+
+    
+    for i in range(0,r):
+        Mi=np.linalg.norm(M[i,:])
+        if Mi!=0:
+            N[i,:] = M[i,:] / Mi
+        else:
+            N[i,:] = M[i,:]
+    return N  
+

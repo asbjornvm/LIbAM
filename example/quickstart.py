@@ -1,8 +1,8 @@
 import networkx as nx
 
-from graphalign import GraphPair
-from graphalign import algorithms as alg
-from graphalign.evaluation.hungarian import total_eval
+import libam
+from libam import GraphPair
+from libam import algorithms as alg
 
 def main() -> None:
     # Step 1: Generate base graph
@@ -13,19 +13,13 @@ def main() -> None:
     pair = GraphPair.from_graph(base_graph).permute().add_noise(target_noise=0.05)
     print(f"Source edges: {pair.src.number_of_edges()}, Target edges: {pair.tar.number_of_edges()}")
 
-    # Step 3: Construct algorithm parameter object and algorithm object
-    parameters = {
-        "iterations": 1,
-        "simple": True,
-        "mu": 0.05,
-        "efn": 3,
-    }
-    algorithm = alg.fugal(pair, **parameters)
+    # Step 3: Construct algorithm with parameter
+    algorithm = alg.fugal(pair, 15, True, 0.05, 3)
 
     # Step 4: Run and analyze accuracy
-    result = algorithm.evaluate()
-    accuracy = total_eval(pair, result)
-    print(f"result {algorithm.name} had a accuracy of: {accuracy:.4f}")
+    result = algorithm.align()
+    acc = libam.evaluation.accuracy(pair, result)
+    print(f"{algorithm.name} had an accuracy of: {acc:.4f}")
 
 
 if __name__ == "__main__":
